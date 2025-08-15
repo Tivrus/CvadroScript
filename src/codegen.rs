@@ -25,21 +25,40 @@ impl CodeGen {
         self.output.push_str("}\n\n");
         
         let mut has_main = false;
-        for stmt in &stmts {
-            if let Stmt::Function(func) = stmt {
-                if func.name == "main" {
+        let mut functions = Vec::new();
+        let mut global_stmts = Vec::new();
+        
+        // Разделяем функции и глобальные выражения
+        for stmt in stmts {
+            match stmt {
+                Stmt::Function(ref func) if func.name == "main" => {
                     has_main = true;
+                    functions.push(stmt);
+                },
+                Stmt::Function(_) => {
+                    functions.push(stmt);
+                },
+                _ => {
+                    global_stmts.push(stmt);
                 }
             }
         }
         
-        for stmt in stmts {
+        // Генерируем функции
+        for stmt in functions {
             self.gen_stmt(&stmt);
         }
         
-        // Если нет функции main, создаем её и добавляем туда все глобальные выражения
+        // Если нет функции main, создаем её и добавляем туда глобальные выражения
         if !has_main {
             self.output.push_str("int main() {\n");
+            self.indent_level += 1;
+            
+            for stmt in global_stmts {
+                self.gen_stmt(&stmt);
+            }
+            
+            self.indent_level -= 1;
             self.output.push_str("    return 0;\n");
             self.output.push_str("}\n");
         }
@@ -48,7 +67,8 @@ impl CodeGen {
     fn gen_stmt(&mut self, stmt: &Stmt) {
         match stmt {
             Stmt::Expr(expr) => {
-                self.push_line(&format!("{};", self.gen_expr(expr)));
+                let expr_code = self.gen_expr(expr);
+                self.push_line(&format!("{};", expr_code));
             },
             Stmt::Let(name, _type, expr) => {
                 let expr_code = self.gen_expr(expr);
@@ -63,7 +83,8 @@ impl CodeGen {
             },
             Stmt::Return(expr) => {
                 if let Some(expr) = expr {
-                    self.push_line(&format!("return {};", self.gen_expr(expr)));
+                    let expr_code = self.gen_expr(expr);
+                    self.push_line(&format!("return {};", expr_code));
                 } else {
                     self.push_line("return;");
                 }
@@ -90,9 +111,10 @@ impl CodeGen {
                 format!("({}{})", op_str, expr_code)
             },
             Expr::Call(name, args) => {
-                let args_code: Vec<String> = args.iter()
-                    .map(|arg| self.gen_expr(arg))
-                    .collect();
+                let mut args_code = Vec::new();
+                for arg in args {
+                    args_code.push(self.gen_expr(arg));
+                }
                 format!("{}({})", name, args_code.join(", "))
             },
             Expr::If(condition, then_block, else_block) => {

@@ -1,0 +1,1 @@
+D:\programing\CvadroScript\target\release\cvadroscript.exe: D:\programing\CvadroScript\src\ast.rs D:\programing\CvadroScript\src\codegen.rs D:\programing\CvadroScript\src\lexer.rs D:\programing\CvadroScript\src\main.rs D:\programing\CvadroScript\src\parser.rs

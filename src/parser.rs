@@ -17,7 +17,13 @@ impl Parser {
     pub fn parse(&mut self) -> Vec<Stmt> {
         let mut program = vec![];
         while !self.is_at_end() {
-            program.push(self.declaration());
+            // Пропускаем лишние newline токены в начале
+            while self.peek() == &Token::Newline {
+                self.advance();
+            }
+            if !self.is_at_end() {
+                program.push(self.declaration());
+            }
         }
         program
     }
@@ -52,8 +58,14 @@ impl Parser {
         let return_type = self.parse_type();
         
         self.consume(&Token::Colon);
-        self.consume(&Token::Newline);
-        self.consume(&Token::Indent);
+        
+        // Пропускаем newline и ожидаем indent для тела функции
+        if self.peek() == &Token::Newline {
+            self.advance();
+        }
+        if self.peek() == &Token::Indent {
+            self.advance();
+        }
         
         let body = self.block();
         
@@ -78,6 +90,12 @@ impl Parser {
         
         self.consume(&Token::Eq);
         let expr = self.expression();
+        
+        // Пропускаем newline после выражения, если он есть
+        if self.peek() == &Token::Newline {
+            self.advance();
+        }
+        
         Stmt::Let(name, type_annotation, expr)
     }
     
@@ -313,6 +331,11 @@ impl Parser {
     }
     
     fn primary(&mut self) -> Expr {
+        // Пропускаем newline токены
+        while self.peek() == &Token::Newline {
+            self.advance();
+        }
+        
         match self.peek() {
             Token::True => {
                 self.advance();

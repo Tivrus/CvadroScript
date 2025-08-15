@@ -1,0 +1,7 @@
+let x: int = 42
+let message: string = "Привет из CvadroScript!"
+
+print(x)
+print(message)
+print("Математика:")
+print(x + 10)
